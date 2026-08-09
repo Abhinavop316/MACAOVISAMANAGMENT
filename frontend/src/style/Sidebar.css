@@ -1,0 +1,191 @@
+/* Left Sidebar Styling */
+.sidebar-container {
+  width: 200px;
+  min-width: 200px;
+  background-color: #dbeafe;
+  padding: 10px;
+  border-right: 1px solid #bfdbfe;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+/* Sidebar Top Menu Buttons */
+.sidebar-nav-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: 1px solid #1e40af;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s ease, filter 0.2s ease;
+  line-height: 1.25;
+}
+
+.sidebar-nav-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.sidebar-nav-btn.active {
+  background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%);
+  border-color: #0f172a;
+}
+
+/* Promo Banner Cards */
+.sidebar-promo-card {
+  width: 100%;
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+  color: #ffffff;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.sidebar-promo-card:hover {
+  transform: scale(1.02);
+}
+
+.promo-pink {
+  background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+  border: 1px solid #9f1239;
+}
+
+.promo-red {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  border: 1px solid #991b1b;
+}
+
+.promo-icon-circle {
+  width: 28px;
+  height: 28px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.promo-text {
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+/* Visitor Counter */
+.visitor-counter-box {
+  background-color: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.visitor-title {
+  font-size: 11px;
+  font-weight: bold;
+  color: #1e3a8a;
+  margin-bottom: 4px;
+}
+
+.odometer-digits {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+
+.odometer-digit {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #facc15;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  border: 1px solid #334155;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Social Links Grid */
+.social-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-title {
+  font-size: 11px;
+  font-weight: bold;
+  color: #1e3a8a;
+}
+
+.social-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.social-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  margin: 0 auto;
+}
+
+.social-icon-badge:hover {
+  transform: scale(1.1);
+}
+
+.bg-wechat { background-color: #07c160; }
+.bg-weibo { background-color: #e6162d; }
+.bg-facebook { background-color: #1877f2; }
+.bg-instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+.bg-youtube { background-color: #ff0000; }
+.bg-red { background-color: #ff2442; }
+.bg-tiktok { background-color: #000000; }
+.bg-app { background-color: #2563eb; }
+
+.mobile-app-label {
+  font-size: 10px;
+  color: #1e3a8a;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.cpsp-shield-mini {
+  width: 36px;
+  height: 36px;
+  margin-top: 4px;
+}
+
+/* Mobile responsive rule: hide sidebar completely on mobile interface */
+@media (max-width: 768px) {
+  .sidebar-container {
+    display: none !important;
+  }
+}

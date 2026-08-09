@@ -1,0 +1,241 @@
+/* Styling for CheckStatus component matching Macau CPSP design system */
+.check-status-container {
+  width: 100%;
+  padding: 15px 0 10px 0;
+  background-color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.check-status-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.check-status-blue-arrow {
+  width: 14px;
+  height: 14px;
+  background-color: #2563eb;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.check-status-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1d4ed8;
+  margin: 0;
+}
+
+.check-status-header-line {
+  border: none;
+  border-bottom: 2px solid #2563eb;
+  margin-top: 6px;
+  margin-bottom: 16px;
+}
+
+/* Error Banner */
+.check-status-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b91c1c;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.check-status-error-icon {
+  width: 18px;
+  height: 18px;
+  background-color: #b91c1c;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Callout Box */
+.check-status-callout {
+  background-color: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-left: 4px solid #0284c7;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #0369a1;
+  line-height: 1.5;
+}
+
+.check-status-info-badge {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: bold;
+  color: #0284c7;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+.help-tag {
+  display: inline-block;
+  border: 1px solid #64748b;
+  background-color: #ffffff;
+  color: #1e293b;
+  font-size: 11px;
+  padding: 0 4px;
+  border-radius: 2px;
+  margin: 0 2px;
+}
+
+/* Form Layout */
+.check-status-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-label {
+  width: 220px;
+  min-width: 220px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.form-input-container {
+  flex: 1;
+  max-width: 320px;
+  position: relative;
+}
+
+.form-control {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #1e293b;
+  outline: none;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.form-control::placeholder {
+  color: #94a3b8;
+}
+
+.help-link {
+  color: #2563eb;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.help-link:hover {
+  text-decoration: underline;
+  color: #1e40af;
+}
+
+/* Action Buttons */
+.check-status-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.btn-continue-submit {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: 1px solid #1e40af;
+  border-radius: 3px;
+  padding: 8px 24px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: filter 0.2s ease, transform 0.1s ease;
+}
+
+.btn-continue-submit:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-back-cancel {
+  background-color: #e2e8f0;
+  color: #1e3a8a;
+  border: 1px solid #94a3b8;
+  border-radius: 3px;
+  padding: 8px 24px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-back-cancel:hover {
+  background-color: #cbd5e1;
+}
+
+/* Mobile responsive rules */
+@media (max-width: 768px) {
+  .check-status-container {
+    padding: 10px 8px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .form-label {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .form-input-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .check-status-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-continue-submit,
+  .btn-back-cancel {
+    width: 100%;
+    text-align: center;
+  }
+}

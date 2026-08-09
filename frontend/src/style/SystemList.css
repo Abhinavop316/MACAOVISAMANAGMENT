@@ -1,0 +1,18 @@
+/* System Services List Layout */
+.system-list-container {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.system-list-header {
+  margin-bottom: 10px;
+}
+
+.system-list-cards {
+  display: flex;
+  flex-direction: column;
+}

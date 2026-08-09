@@ -1,0 +1,71 @@
+/* Google Translate Container & Quick Buttons */
+.gt-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gt-quick-langs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gt-lang-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.gt-lang-btn:hover {
+  text-decoration: underline;
+  color: #e0f2fe;
+}
+
+.gt-lang-btn.active {
+  font-weight: bold;
+  color: #fef08a;
+  text-decoration: underline;
+}
+
+.gt-element-container {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Hide standard ugly Google Translate banner top frame if added */
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+body {
+  top: 0px !important;
+}
+
+/* Customize Google Translate select box */
+.goog-te-combo {
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 3px;
+  border: 1px solid #94a3b8;
+  background-color: #ffffff;
+  color: #1e293b;
+  outline: none;
+  cursor: pointer;
+}
+
+.goog-te-gadget {
+  color: #e2e8f0 !important;
+  font-size: 11px !important;
+  font-family: inherit !important;
+}
+
+.goog-te-gadget span {
+  display: none !important;
+}

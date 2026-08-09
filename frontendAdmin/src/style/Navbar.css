@@ -1,0 +1,44 @@
+/* Main Navigation Bar Styles */
+.main-navbar {
+  background-color: #17365d;
+  width: 100%;
+  border-top: 1px solid #255288;
+  border-bottom: 2px solid #0f233d;
+}
+
+.nav-menu-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  justify-content: space-around;
+  flex-wrap: wrap;
+}
+
+.nav-menu-item {
+  flex: 1;
+  text-align: center;
+  border-right: 1px solid #0d2139;
+}
+
+.nav-menu-item:last-child {
+  border-right: none;
+}
+
+.nav-menu-link {
+  display: block;
+  padding: 10px 8px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: bold;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-menu-link:hover,
+.nav-menu-item.active .nav-menu-link {
+  background-color: #25538e;
+  color: #ffffff;
+}
