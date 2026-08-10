@@ -44,7 +44,6 @@ export default function NewApplicationPage() {
     if (
       !idNumber.trim() ||
       !surname.trim() ||
-      !email.trim() ||
       !dob ||
       !placeOfBirth.trim()
     ) {
@@ -64,7 +63,7 @@ export default function NewApplicationPage() {
     try {
       const targetEmail = formData.email;
 
-      // 1. Persist to Backend MongoDB + Trigger Nodemailer Email
+      // 1. Persist to Backend MongoDB (Primary) + Trigger Optional Email (Secondary)
       const response = await API.post("/clients", {
         referenceNo: formData.referenceNo,
         Category: formData.category,
@@ -81,10 +80,10 @@ export default function NewApplicationPage() {
 
       const data = response.data;
 
-      if (data && data.success && data.client) {
+      if (data && (data.success || data.client)) {
         const finalRef = data.client?.referenceNo || formData.referenceNo;
 
-        // Save to local store ONLY AFTER backend registration & email confirmation succeed
+        // Save to local store when backend registration succeeds
         const localCreated = addApplication({ ...formData, referenceNo: finalRef });
         setCreatedApp(localCreated);
 
@@ -92,7 +91,7 @@ export default function NewApplicationPage() {
           `Application ${finalRef} successfully registered in database!`,
         );
 
-        if (data.emailDetails?.previewUrl) {
+        if (data.emailSent && data.emailDetails?.previewUrl) {
           setEmailNotice(
             <span>
               📧 Confirmation email sent!{" "}
@@ -110,9 +109,17 @@ export default function NewApplicationPage() {
               </a>
             </span>,
           );
-        } else {
+        } else if (data.emailSent) {
           setEmailNotice(
             `📧 Confirmation email with Reference No (${finalRef}) successfully delivered to ${targetEmail}.`,
+          );
+        } else if (targetEmail) {
+          setEmailNotice(
+            `ℹ️ Application saved to database. (Confirmation email could not be delivered to ${targetEmail}).`,
+          );
+        } else {
+          setEmailNotice(
+            `ℹ️ Application saved to database without email notification.`,
           );
         }
 
@@ -132,7 +139,7 @@ export default function NewApplicationPage() {
         });
       } else {
         setErrorMsg(
-          `Registration Failed: ${data.message || "Confirmation email could not be delivered. Application was NOT registered."}`
+          `Registration Failed: ${data.message || "Application could not be saved to database."}`
         );
       }
     } catch (err) {
@@ -140,8 +147,8 @@ export default function NewApplicationPage() {
       const apiError =
         err.response?.data?.message ||
         err.message ||
-        "Failed to deliver confirmation email. Registration cancelled.";
-      setErrorMsg(`❌ Registration Aborted: ${apiError}`);
+        "Failed to save application to database.";
+      setErrorMsg(`❌ Registration Failed: ${apiError}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -192,10 +199,10 @@ export default function NewApplicationPage() {
               <div className="admin-spinner"></div>
               <div>
                 <strong style={{ color: '#0369a1', fontSize: '0.98rem' }}>
-                  ⏳ Registering Application & Dispatching Confirmation Email...
+                  ⏳ Registering Application in Database...
                 </strong>
                 <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#334155' }}>
-                  Please wait while the system saves the record and sends the email notification to <code>{formData.email}</code>.
+                  Please wait while the system saves the record in the database.
                 </p>
               </div>
             </div>
@@ -358,7 +365,7 @@ export default function NewApplicationPage() {
 
             <div className="form-grid-3">
               <div className="admin-form-group">
-                <label htmlFor="email">Email Address *</label>
+                <label htmlFor="email">Email Address (Optional)</label>
                 <input
                   type="email"
                   id="email"
@@ -367,7 +374,6 @@ export default function NewApplicationPage() {
                   placeholder="e.g. applicant@example.com"
                   value={formData.email}
                   onChange={handleChange}
-                  required
                 />
               </div>
 
@@ -447,7 +453,7 @@ export default function NewApplicationPage() {
                 {isSubmitting ? (
                   <>
                     <span className="btn-spinner"></span>
-                    <span>Sending Email & Registering...</span>
+                    <span>Registering Application...</span>
                   </>
                 ) : (
                   "💾 Save & Register Application"

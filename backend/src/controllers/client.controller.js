@@ -69,9 +69,9 @@ exports.createClient = async (req, res) => {
       }
     }
 
-    if (!clientEmail || !passport || !name) {
+    if (!passport || !name) {
       return res.status(400).json({
-        message: "Mandatory fields missing: Email, Passport / ID Number, and Name are required."
+        message: "Mandatory fields missing: Passport / ID Number and Name are required."
       });
     }
 
@@ -91,20 +91,7 @@ exports.createClient = async (req, res) => {
       Paragraph: appRemarks
     };
 
-    // 1. Send email FIRST before finalizing database registration
-    const emailResult = await sendRegistrationEmail(tempClientData);
-
-    if (!emailResult || !emailResult.success) {
-      console.warn(`[Registration Aborted] Email delivery to ${clientEmail} failed (${emailResult?.error || 'Unknown error'}). Record NOT saved in DB.`);
-      return res.status(400).json({
-        success: false,
-        message: `Registration failed: Confirmation email could not be delivered to ${clientEmail} (${emailResult?.error || "Connection timeout"}). Application was NOT registered in database.`,
-        emailSent: false,
-        emailDetails: emailResult
-      });
-    }
-
-    // 2. ONLY Save to Database AFTER confirmation email delivery succeeds!
+    // 1. PRIMARY ACTION: Add & save application to MongoDB database first!
     const existingRef = await clientModel.findOne({ referenceNo: finalRefNo });
     if (existingRef) {
       finalRefNo = generateReferenceNo();
@@ -114,11 +101,31 @@ exports.createClient = async (req, res) => {
     const newClient = new clientModel(tempClientData);
     await newClient.save();
 
+    // 2. SECONDARY ACTION: Email sending is secondary, non-blocking & optional
+    let emailResult = null;
+    let emailSent = false;
+
+    if (clientEmail) {
+      try {
+        emailResult = await sendRegistrationEmail(tempClientData);
+        emailSent = Boolean(emailResult && emailResult.success);
+        if (!emailSent) {
+          console.warn(`[Nodemailer Non-Fatal Warning] Email delivery to ${clientEmail} issue: ${emailResult?.error || 'Unknown error'}. Record IS saved in DB.`);
+        }
+      } catch (emailErr) {
+        console.error(`[Nodemailer Non-Fatal Warning] Exception sending email to ${clientEmail}:`, emailErr.message);
+        emailResult = { success: false, error: emailErr.message };
+        emailSent = false;
+      }
+    }
+
     return res.status(201).json({
       success: true,
-      message: `Client application created and confirmation email sent successfully with Reference No: ${finalRefNo}`,
+      message: emailSent
+        ? `Client application created and confirmation email sent successfully with Reference No: ${finalRefNo}`
+        : `Client application created successfully in database with Reference No: ${finalRefNo}`,
       client: newClient,
-      emailSent: true,
+      emailSent: emailSent,
       emailDetails: emailResult
     });
   } catch (error) {
@@ -240,10 +247,15 @@ exports.editClient = async (req, res) => {
     Object.assign(client, req.body);
     await client.save();
 
-    // Trigger status update email
+    // Trigger status update email (secondary action)
     let emailResult = null;
     if (client.Email) {
-      emailResult = await sendStatusUpdateEmail(client);
+      try {
+        emailResult = await sendStatusUpdateEmail(client);
+      } catch (emailErr) {
+        console.error("[Nodemailer Non-Fatal Warning] Status email failed:", emailErr.message);
+        emailResult = { success: false, error: emailErr.message };
+      }
     }
 
     return res.status(200).json({

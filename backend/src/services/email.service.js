@@ -122,6 +122,9 @@ async function sendEmail(mailOptions) {
  * @returns {Promise<Object>} Status of email sending operation
  */
 async function sendRegistrationEmail(client) {
+  if (!client || !client.Email || !client.Email.trim()) {
+    return { success: false, error: 'No recipient email provided' };
+  }
   const user = process.env.EMAIL_USER;
   const from = process.env.EMAIL_FROM || `"Macao PSP Services" <${user || 'noreply.macau@gmail.com'}>`;
 

@@ -81,8 +81,8 @@ export default function EditApplicationPage() {
     e.preventDefault();
     if (!editForm || !selectedApp) return;
 
-    if (!editForm.idNumber || !editForm.surname || !editForm.email) {
-      setErrorMsg('Mandatory fields (ID Number, Name, Email) cannot be empty.');
+    if (!editForm.idNumber || !editForm.surname) {
+      setErrorMsg('Mandatory fields (ID Number, Name) cannot be empty.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -478,10 +478,10 @@ export default function EditApplicationPage() {
                     <div className="admin-spinner"></div>
                     <div>
                       <strong style={{ color: '#0369a1', fontSize: '0.98rem' }}>
-                        ⏳ Updating Record & Dispatching Status Email...
+                        ⏳ Updating Application Record...
                       </strong>
                       <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#334155' }}>
-                        Please wait while the status change is saved and emailed to <code>{editForm.email}</code>.
+                        Please wait while the updates are saved to the database.
                       </p>
                     </div>
                   </div>
@@ -497,7 +497,7 @@ export default function EditApplicationPage() {
                     {isSaving ? (
                       <>
                         <span className="btn-spinner"></span>
-                        <span>Saving & Sending Email...</span>
+                        <span>Saving Changes...</span>
                       </>
                     ) : (
                       "💾 Save Changes"

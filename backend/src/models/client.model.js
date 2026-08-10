@@ -17,7 +17,8 @@ const clientSchema = new mongoose.Schema({
   },
   Email: {
     type: String,
-    required: true,
+    required: false,
+    default: "",
   },
   Gender: {
     type: String,
