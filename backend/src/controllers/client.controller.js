@@ -1,5 +1,5 @@
 const clientModel = require("../models/client.model");
-const { sendRegistrationEmail } = require("../services/email.service");
+const { sendRegistrationEmail, sendStatusUpdateEmail } = require("../services/email.service");
 
 // Helper to generate unique reference number in format YYYY-XXXXXX
 function generateReferenceNo() {
@@ -45,7 +45,7 @@ exports.createClient = async (req, res) => {
     // Normalize field names across frontend variations
     const clientEmail = (Email || email || "").trim();
     const passport = (PassportNumber || idNumber || "").trim();
-    const name = (FullName || (surname ? `${surname} ${givenName || ""}`.trim() : "")).trim();
+    const name = (FullName || (givenName || surname ? `${givenName || ""} ${surname || ""}`.trim() : "")).trim();
     const appCategory = Category || category || "Immigration Non-Resident Workers";
     const appGender = Gender || gender || "Male";
     const appAddress = Address || address || "N/A";
@@ -227,7 +227,19 @@ exports.editClient = async (req, res) => {
 
     Object.assign(client, req.body);
     await client.save();
-    return res.status(200).json(client);
+
+    // Trigger status update email
+    let emailResult = null;
+    if (client.Email) {
+      emailResult = await sendStatusUpdateEmail(client);
+    }
+
+    return res.status(200).json({
+      success: true,
+      client,
+      emailSent: emailResult ? emailResult.success : false,
+      emailDetails: emailResult
+    });
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }

@@ -82,6 +82,7 @@ export default function EditApplicationPage() {
 
     if (!editForm.idNumber || !editForm.surname || !editForm.email) {
       setErrorMsg('Mandatory fields (ID Number, Name, Email) cannot be empty.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -94,7 +95,7 @@ export default function EditApplicationPage() {
         await API.put(`/clients/${selectedApp.mongoId}`, {
           referenceNo: editForm.referenceNo,
           PassportNumber: editForm.idNumber,
-          FullName: `${editForm.surname} ${editForm.givenName || ''}`.trim(),
+          FullName: `${editForm.givenName ? `${editForm.givenName} ` : ''}${editForm.surname}`.trim(),
           Email: editForm.email,
           Category: editForm.category,
           Status: editForm.status,
@@ -106,9 +107,11 @@ export default function EditApplicationPage() {
       setErrorMsg('');
       loadApps();
       setSelectedApp({ ...selectedApp, ...editForm });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
       setErrorMsg('Error updating application.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -259,7 +262,7 @@ export default function EditApplicationPage() {
                         className={isSelected ? 'row-selected' : ''}
                       >
                         <td className="font-mono font-bold">{app.referenceNo}</td>
-                        <td>{app.surname} {app.givenName || ''}</td>
+                        <td>{app.givenName ? `${app.givenName} ${app.surname}` : app.surname}</td>
                         <td>
                           <span className="id-badge">{app.idType}</span> {app.idNumber}
                         </td>
@@ -403,6 +406,18 @@ export default function EditApplicationPage() {
 
                 <div className="form-grid-3">
                   <div className="admin-form-group">
+                    <label htmlFor="editGivenName">Given Name(s)</label>
+                    <input
+                      type="text"
+                      id="editGivenName"
+                      name="givenName"
+                      className="admin-input"
+                      value={editForm.givenName || ''}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+
+                  <div className="admin-form-group">
                     <label htmlFor="editSurname">Surname / Family Name</label>
                     <input
                       type="text"
@@ -412,18 +427,6 @@ export default function EditApplicationPage() {
                       value={editForm.surname}
                       onChange={handleFormChange}
                       required
-                    />
-                  </div>
-
-                  <div className="admin-form-group">
-                    <label htmlFor="editGivenName">Given Name(s)</label>
-                    <input
-                      type="text"
-                      id="editGivenName"
-                      name="givenName"
-                      className="admin-input"
-                      value={editForm.givenName || ''}
-                      onChange={handleFormChange}
                     />
                   </div>
 
@@ -441,43 +444,17 @@ export default function EditApplicationPage() {
                   </div>
                 </div>
 
-                <div className="form-grid-3">
-                  <div className="admin-form-group">
-                    <label htmlFor="editPlaceOfBirth">Place of Birth</label>
-                    <input
-                      type="text"
-                      id="editPlaceOfBirth"
-                      name="placeOfBirth"
-                      className="admin-input"
-                      value={editForm.placeOfBirth}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="admin-form-group">
-                    <label htmlFor="editSubmissionDate">Submission Date</label>
-                    <input
-                      type="date"
-                      id="editSubmissionDate"
-                      name="submissionDate"
-                      className="admin-input"
-                      value={editForm.submissionDate}
-                      onChange={handleFormChange}
-                    />
-                  </div>
-
-                  <div className="admin-form-group">
-                    <label htmlFor="editEffectiveDate">Approval / Effective Date</label>
-                    <input
-                      type="date"
-                      id="editEffectiveDate"
-                      name="effectiveDate"
-                      className="admin-input"
-                      value={editForm.effectiveDate || ''}
-                      onChange={handleFormChange}
-                    />
-                  </div>
+                <div className="admin-form-group">
+                  <label htmlFor="editPlaceOfBirth">Place of Birth</label>
+                  <input
+                    type="text"
+                    id="editPlaceOfBirth"
+                    name="placeOfBirth"
+                    className="admin-input"
+                    value={editForm.placeOfBirth}
+                    onChange={handleFormChange}
+                    required
+                  />
                 </div>
 
                 <div className="admin-form-group">

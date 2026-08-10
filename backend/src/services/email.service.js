@@ -76,12 +76,24 @@ async function sendRegistrationEmail(client) {
   // 1. Try Configured SMTP if user and pass exist
   if (user && pass && pass !== 'your_app_password_here') {
     try {
-      const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure,
-        auth: { user, pass }
-      });
+      const transporter = host.includes('gmail')
+        ? nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user, pass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000
+          })
+        : nodemailer.createTransport({
+            host,
+            port,
+            secure,
+            auth: { user, pass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000
+          });
+
       const info = await transporter.sendMail(mailOptions);
       console.log(`[Email Service Success] Email sent via SMTP to ${client.Email}. MessageId: ${info.messageId}`);
       return { success: true, messageId: info.messageId, mode: 'SMTP' };
@@ -100,7 +112,10 @@ async function sendRegistrationEmail(client) {
       auth: {
         user: testAccount.user,
         pass: testAccount.pass
-      }
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
     });
 
     const info = await testTransporter.sendMail({
@@ -118,6 +133,127 @@ async function sendRegistrationEmail(client) {
   }
 }
 
+/**
+ * Sends an email notification when an application status/details are updated by Admin.
+ * 
+ * @param {Object} client - The updated client application object
+ * @returns {Promise<Object>} Status of email sending operation
+ */
+async function sendStatusUpdateEmail(client) {
+  if (!client || !client.Email) {
+    return { success: false, error: 'No recipient email provided' };
+  }
+
+  const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.EMAIL_PORT || '465', 10);
+  const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  const from = process.env.EMAIL_FROM || `"Macao PSP Services" <${user || 'noreply.macau@gmail.com'}>`;
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; background-color: #ffffff;">
+      <div style="text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 16px; margin-bottom: 20px;">
+        <h2 style="color: #0056b3; margin: 0;">Macao Public Security Police Force</h2>
+        <p style="color: #64748b; font-size: 14px; margin: 4px 0 0 0;">Application Status Update Notification</p>
+      </div>
+
+      <p style="font-size: 16px; color: #1e293b;">Dear <strong>${client.FullName}</strong>,</p>
+      
+      <p style="font-size: 15px; color: #334155; line-height: 1.5;">
+        The status of your application for <strong>${client.Category}</strong> has been updated.
+      </p>
+
+      <div style="background-color: #f1f5f9; border-left: 4px solid #0056b3; border-radius: 4px; padding: 16px; margin: 20px 0;">
+        <h4 style="margin: 0 0 10px 0; color: #0f172a;">Updated Application Details</h4>
+        <p style="margin: 4px 0; font-size: 14px; color: #334155;">
+          <strong>Reference Number:</strong> <span style="font-family: monospace; font-size: 18px; font-weight: bold; color: #0056b3; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">${client.referenceNo}</span>
+        </p>
+        <p style="margin: 4px 0; font-size: 14px; color: #334155;">
+          <strong>Passport / Identification No:</strong> ${client.PassportNumber}
+        </p>
+        <p style="margin: 4px 0; font-size: 14px; color: #334155;">
+          <strong>New Status:</strong> <span style="color: #0056b3; font-weight: bold;">${client.Status || 'Under Review'}</span>
+        </p>
+        ${client.Paragraph ? `
+        <p style="margin: 8px 0 4px 0; font-size: 14px; color: #334155;">
+          <strong>Official Remarks:</strong><br/>
+          <em style="color: #475569;">"${client.Paragraph}"</em>
+        </p>` : ''}
+      </div>
+
+      <p style="font-size: 14px; color: #64748b;">
+        You can verify this update online anytime by providing your Passport No, Reference No, and Registered Email.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin-top: 24px;" />
+      <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+        This is an automated notification from Macao PSP Immigration Services.
+      </p>
+    </div>
+  `;
+
+  const mailOptions = {
+    from,
+    to: client.Email,
+    subject: `Application Status Update - Reference No: ${client.referenceNo} (${client.Status})`,
+    html: htmlContent
+  };
+
+  if (user && pass && pass !== 'your_app_password_here') {
+    try {
+      const transporter = host.includes('gmail')
+        ? nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user, pass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000
+          })
+        : nodemailer.createTransport({
+            host,
+            port,
+            secure,
+            auth: { user, pass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000
+          });
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Email Service Update Success] Email sent to ${client.Email}. MessageId: ${info.messageId}`);
+      return { success: true, messageId: info.messageId, mode: 'SMTP' };
+    } catch (error) {
+      console.warn(`[Email Service Update SMTP Notice] Failed: ${error.message}`);
+    }
+  }
+
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const testTransporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: { user: testAccount.user, pass: testAccount.pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    });
+
+    const info = await testTransporter.sendMail({
+      ...mailOptions,
+      from: `"Macao PSP Services" <${testAccount.user}>`
+    });
+
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    return { success: true, messageId: info.messageId, previewUrl, mode: 'Ethereal' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = {
-  sendRegistrationEmail
+  sendRegistrationEmail,
+  sendStatusUpdateEmail
 };
+

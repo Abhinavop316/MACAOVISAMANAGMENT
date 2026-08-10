@@ -156,7 +156,7 @@ export default function CheckStatus() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px', color: '#334155' }}>
-            <div><strong>Applicant Name:</strong> {appResult.FullName || `${appResult.surname || ''} ${appResult.givenName || ''}`}</div>
+            <div><strong>Applicant Name:</strong> {appResult.FullName || `${appResult.givenName || ''} ${appResult.surname || ''}`.trim()}</div>
             <div><strong>Passport Number:</strong> {appResult.PassportNumber || appResult.idNumber}</div>
             <div><strong>Email Address:</strong> {appResult.Email || appResult.email}</div>
             <div><strong>Category:</strong> {appResult.Category || appResult.category}</div>

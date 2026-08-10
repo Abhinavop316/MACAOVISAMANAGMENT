@@ -18,8 +18,6 @@ export default function NewApplicationPage() {
     placeOfBirth: "",
     category: "Student Visa",
     status: "Under Review",
-    submissionDate: new Date().toISOString().split("T")[0],
-    effectiveDate: "",
     remarks: "",
   });
 
@@ -53,6 +51,7 @@ export default function NewApplicationPage() {
       setErrorMsg(
         "Please fill in all mandatory application fields marked with *.",
       );
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -60,6 +59,7 @@ export default function NewApplicationPage() {
     setErrorMsg("");
     setSuccessMsg("");
     setEmailNotice("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     try {
       // 1. Local Store Backup
@@ -70,7 +70,7 @@ export default function NewApplicationPage() {
       const response = await API.post("/clients", {
         referenceNo: formData.referenceNo,
         Category: formData.category,
-        FullName: `${formData.surname} ${formData.givenName || ""}`.trim(),
+        FullName: `${formData.givenName ? `${formData.givenName} ` : ""}${formData.surname}`.trim(),
         Email: formData.email,
         PassportNumber: formData.idNumber,
         DOB: formData.dob,
@@ -82,6 +82,8 @@ export default function NewApplicationPage() {
       });
 
       const data = response.data;
+
+      const targetEmail = formData.email;
 
       if (data && data.client) {
         const finalRef = data.client?.referenceNo || localCreated.referenceNo;
@@ -111,7 +113,7 @@ export default function NewApplicationPage() {
             );
           } else {
             setEmailNotice(
-              `📧 Confirmation email with Reference No (${finalRef}) sent to ${formData.email}.`,
+              `📧 Confirmation email with Reference No (${finalRef}) sent to ${targetEmail}.`,
             );
           }
         } else {
@@ -127,6 +129,21 @@ export default function NewApplicationPage() {
           `Backend notice: ${data.message || "Could not connect to backend"}`,
         );
       }
+
+      // Reset all form input fields & auto-generate a fresh new Reference Number
+      setFormData({
+        referenceNo: generateRefNumber(),
+        idType: "passport",
+        idNumber: "",
+        surname: "",
+        givenName: "",
+        email: "",
+        dob: "",
+        placeOfBirth: "",
+        category: "Student Visa",
+        status: "Under Review",
+        remarks: "",
+      });
     } catch (err) {
       console.warn("Backend API connection warning:", err.message);
       setSuccessMsg(
@@ -135,6 +152,20 @@ export default function NewApplicationPage() {
       setEmailNotice(
         `Note: Saved in local store. Backend server connection error.`,
       );
+      // Reset inputs & generate new ref-no even on offline fallback
+      setFormData({
+        referenceNo: generateRefNumber(),
+        idType: "passport",
+        idNumber: "",
+        surname: "",
+        givenName: "",
+        email: "",
+        dob: "",
+        placeOfBirth: "",
+        category: "Student Visa",
+        status: "Under Review",
+        remarks: "",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -152,8 +183,6 @@ export default function NewApplicationPage() {
       placeOfBirth: "",
       category: "Immigration Non-Resident Workers",
       status: "Under Review",
-      submissionDate: new Date().toISOString().split("T")[0],
-      effectiveDate: "",
       remarks: "",
     });
     setSuccessMsg("");
@@ -310,7 +339,20 @@ export default function NewApplicationPage() {
 
             <div className="form-grid-2">
               <div className="admin-form-group">
-                <label htmlFor="surname">Surname / Family Name *</label>
+                <label htmlFor="givenName">Surname</label>
+                <input
+                  type="text"
+                  id="givenName"
+                  name="givenName"
+                  className="admin-input"
+                  placeholder="e.g. John Michael"
+                  value={formData.givenName}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label htmlFor="surname">Name</label>
                 <input
                   type="text"
                   id="surname"
@@ -320,19 +362,6 @@ export default function NewApplicationPage() {
                   value={formData.surname}
                   onChange={handleChange}
                   required
-                />
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="givenName">Given Name(s)</label>
-                <input
-                  type="text"
-                  id="givenName"
-                  name="givenName"
-                  className="admin-input"
-                  placeholder="e.g. John Michael"
-                  value={formData.givenName}
-                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -384,50 +413,23 @@ export default function NewApplicationPage() {
               3. Processing Status & Remarks
             </div>
 
-            <div className="form-grid-3">
-              <div className="admin-form-group">
-                <label htmlFor="status">Application Status *</label>
-                <select
-                  id="status"
-                  name="status"
-                  className="admin-select status-select"
-                  value={formData.status}
-                  onChange={handleChange}
-                >
-                  <option value="Under Review">Under Review ⏳</option>
-                  <option value="Approved">Approved ✅</option>
-                  <option value="Pending Documents">
-                    Pending Documents 📄
-                  </option>
-                  <option value="Processing">Processing ⚙️</option>
-                  <option value="Rejected">Rejected ❌</option>
-                </select>
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="submissionDate">Submission Date *</label>
-                <input
-                  type="date"
-                  id="submissionDate"
-                  name="submissionDate"
-                  className="admin-input"
-                  value={formData.submissionDate}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="effectiveDate">Approval / Effective Date</label>
-                <input
-                  type="date"
-                  id="effectiveDate"
-                  name="effectiveDate"
-                  className="admin-input"
-                  value={formData.effectiveDate}
-                  onChange={handleChange}
-                />
-              </div>
+            <div className="admin-form-group">
+              <label htmlFor="status">Application Status *</label>
+              <select
+                id="status"
+                name="status"
+                className="admin-select status-select"
+                value={formData.status}
+                onChange={handleChange}
+              >
+                <option value="Under Review">Under Review ⏳</option>
+                <option value="Approved">Approved ✅</option>
+                <option value="Pending Documents">
+                  Pending Documents 📄
+                </option>
+                <option value="Processing">Processing ⚙️</option>
+                <option value="Rejected">Rejected ❌</option>
+              </select>
             </div>
 
             <div className="admin-form-group">
