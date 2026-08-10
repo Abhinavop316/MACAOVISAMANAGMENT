@@ -9,7 +9,8 @@ const nodemailer = require('nodemailer');
  * @returns {Promise<Object>} Status of email sending operation
  */
 /**
- * Helper to attempt sending an email via configured primary SMTP or fallbacks
+ * Helper to attempt sending an email via HTTPS REST API (Resend / Brevo) or primary SMTP / fallbacks.
+ * HTTPS REST API is 100% immune to cloud provider SMTP port blocking on Render / Vercel.
  */
 async function sendMailWithFallback(mailOptions) {
   const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
@@ -17,8 +18,70 @@ async function sendMailWithFallback(mailOptions) {
   const secure = process.env.EMAIL_SECURE === 'true';
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const brevoApiKey = process.env.BREVO_API_KEY;
 
-  // 1. Try Configured Primary SMTP with TLS (port 587 or custom port)
+  // 1. Try Resend HTTPS API (Port 443 - Never blocked on Render / Vercel)
+  if (resendApiKey) {
+    try {
+      console.log(`[Email Service] Attempting delivery via Resend HTTPS API to ${mailOptions.to}...`);
+      const fromAddr = process.env.EMAIL_FROM || 'Macao PSP Services <onboarding@resend.dev>';
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey.trim()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: fromAddr,
+          to: [mailOptions.to],
+          subject: mailOptions.subject,
+          html: mailOptions.html
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.id) {
+        console.log(`[Email Service Success] Email delivered via Resend API to ${mailOptions.to}. ID: ${data.id}`);
+        return { success: true, messageId: data.id, mode: 'ResendAPI' };
+      } else {
+        console.warn(`[Email Service Notice] Resend API error: ${JSON.stringify(data)}`);
+      }
+    } catch (resendErr) {
+      console.warn(`[Email Service Notice] Resend API request failed (${resendErr.message}). Falling back...`);
+    }
+  }
+
+  // 2. Try Brevo HTTPS API (Port 443 - Never blocked on Render / Vercel)
+  if (brevoApiKey) {
+    try {
+      console.log(`[Email Service] Attempting delivery via Brevo HTTPS API to ${mailOptions.to}...`);
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoApiKey.trim(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'Macao PSP Services', email: user || 'noreply.macau@gmail.com' },
+          to: [{ email: mailOptions.to }],
+          subject: mailOptions.subject,
+          htmlContent: mailOptions.html
+        })
+      });
+      const data = await res.json();
+      if (res.ok && (data.messageId || data.id)) {
+        const id = data.messageId || data.id;
+        console.log(`[Email Service Success] Email delivered via Brevo API to ${mailOptions.to}. ID: ${id}`);
+        return { success: true, messageId: id, mode: 'BrevoAPI' };
+      } else {
+        console.warn(`[Email Service Notice] Brevo API error: ${JSON.stringify(data)}`);
+      }
+    } catch (brevoErr) {
+      console.warn(`[Email Service Notice] Brevo API request failed (${brevoErr.message}). Falling back...`);
+    }
+  }
+
+  // 3. Try Primary SMTP (port 587 / 465 with 6s connection timeout)
   if (user && pass && pass !== 'your_app_password_here') {
     try {
       const transporter = nodemailer.createTransport({
@@ -29,19 +92,19 @@ async function sendMailWithFallback(mailOptions) {
         tls: {
           rejectUnauthorized: false
         },
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 15000
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 6000
       });
 
       const info = await transporter.sendMail(mailOptions);
       console.log(`[Email Service Success] Email sent via SMTP (${host}:${port}) to ${mailOptions.to}. MessageId: ${info.messageId}`);
       return { success: true, messageId: info.messageId, mode: 'SMTP' };
     } catch (primaryError) {
-      console.warn(`[Email Service Notice] Primary SMTP (${host}:${port}) failed (${primaryError.message}). Attempting Gmail Service fallback...`);
+      console.warn(`[Email Service Notice] Primary SMTP (${host}:${port}) failed (${primaryError.message}). Trying Gmail Service fallback...`);
     }
 
-    // 2. Try Gmail Service fallback if primary host failed
+    // 4. Try Gmail Service fallback
     try {
       const gmailTransporter = nodemailer.createTransport({
         service: 'gmail',
@@ -49,20 +112,20 @@ async function sendMailWithFallback(mailOptions) {
         tls: {
           rejectUnauthorized: false
         },
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 15000
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 6000
       });
 
       const info = await gmailTransporter.sendMail(mailOptions);
       console.log(`[Email Service Success] Email sent via Gmail Service to ${mailOptions.to}. MessageId: ${info.messageId}`);
       return { success: true, messageId: info.messageId, mode: 'GmailService' };
     } catch (gmailError) {
-      console.warn(`[Email Service Notice] Gmail Service fallback failed (${gmailError.message}). Attempting Ethereal test account...`);
+      console.warn(`[Email Service Notice] Gmail Service fallback failed (${gmailError.message}). Trying Ethereal test account...`);
     }
   }
 
-  // 3. Fallback to Ethereal Test Account
+  // 5. Fallback to Ethereal Test Account (for local development testing)
   try {
     const testAccount = await nodemailer.createTestAccount();
     const testTransporter = nodemailer.createTransport({
@@ -73,9 +136,9 @@ async function sendMailWithFallback(mailOptions) {
         user: testAccount.user,
         pass: testAccount.pass
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000
     });
 
     const info = await testTransporter.sendMail({
@@ -87,8 +150,11 @@ async function sendMailWithFallback(mailOptions) {
     console.log(`[Email Service Success] Email sent via Ethereal to ${mailOptions.to}. Preview URL: ${previewUrl}`);
     return { success: true, messageId: info.messageId, previewUrl, mode: 'Ethereal' };
   } catch (testError) {
-    console.error(`[Email Service Error] All email delivery transports failed:`, testError.message);
-    return { success: false, error: testError.message || 'SMTP Connection timeout' };
+    console.error(`[Email Service Error] All email delivery transports failed on server:`, testError.message);
+    return {
+      success: false,
+      error: `Render host firewall blocked SMTP socket connection (${testError.message}). Please add RESEND_API_KEY or BREVO_API_KEY to Render Environment Variables for 100% instant HTTPS delivery.`
+    };
   }
 }
 

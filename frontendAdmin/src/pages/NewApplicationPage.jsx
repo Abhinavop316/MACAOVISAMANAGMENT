@@ -187,6 +187,20 @@ export default function NewApplicationPage() {
         </div>
 
         <div className="admin-card-body">
+          {isSubmitting && (
+            <div className="admin-loading-overlay">
+              <div className="admin-spinner"></div>
+              <div>
+                <strong style={{ color: '#0369a1', fontSize: '0.98rem' }}>
+                  ⏳ Registering Application & Dispatching Confirmation Email...
+                </strong>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#334155' }}>
+                  Please wait while the system saves the record and sends the email notification to <code>{formData.email}</code>.
+                </p>
+              </div>
+            </div>
+          )}
+
           {successMsg && (
             <div className="admin-alert alert-success">
               <span className="alert-icon">✅</span>
@@ -424,13 +438,26 @@ export default function NewApplicationPage() {
             </div>
 
             <div className="admin-form-actions">
-              <button type="submit" className="btn-admin-primary">
-                💾 Save & Register Application
+              <button
+                type="submit"
+                className="btn-admin-primary"
+                disabled={isSubmitting}
+                style={{ opacity: isSubmitting ? 0.8 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="btn-spinner"></span>
+                    <span>Sending Email & Registering...</span>
+                  </>
+                ) : (
+                  "💾 Save & Register Application"
+                )}
               </button>
               <button
                 type="button"
                 className="btn-admin-secondary"
                 onClick={handleReset}
+                disabled={isSubmitting}
               >
                 🔄 Clear / Reset Form
               </button>

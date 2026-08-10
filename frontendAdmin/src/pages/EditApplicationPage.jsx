@@ -17,6 +17,7 @@ export default function EditApplicationPage() {
   const [editForm, setEditForm] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadApps = async () => {
     try {
@@ -86,6 +87,7 @@ export default function EditApplicationPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       // Local store update
       const updated = updateApplication(selectedApp.id, editForm);
@@ -112,6 +114,8 @@ export default function EditApplicationPage() {
       console.error(err);
       setErrorMsg('Error updating application.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -469,9 +473,35 @@ export default function EditApplicationPage() {
                   ></textarea>
                 </div>
 
+                {isSaving && (
+                  <div className="admin-loading-overlay">
+                    <div className="admin-spinner"></div>
+                    <div>
+                      <strong style={{ color: '#0369a1', fontSize: '0.98rem' }}>
+                        ⏳ Updating Record & Dispatching Status Email...
+                      </strong>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#334155' }}>
+                        Please wait while the status change is saved and emailed to <code>{editForm.email}</code>.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="admin-form-actions">
-                  <button type="submit" className="btn-admin-primary">
-                    💾 Save Changes
+                  <button
+                    type="submit"
+                    className="btn-admin-primary"
+                    disabled={isSaving}
+                    style={{ opacity: isSaving ? 0.8 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                  >
+                    {isSaving ? (
+                      <>
+                        <span className="btn-spinner"></span>
+                        <span>Saving & Sending Email...</span>
+                      </>
+                    ) : (
+                      "💾 Save Changes"
+                    )}
                   </button>
                   <button
                     type="button"
