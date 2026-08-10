@@ -75,13 +75,7 @@ exports.createClient = async (req, res) => {
       });
     }
 
-    // Ensure uniqueness of referenceNo
-    const existingRef = await clientModel.findOne({ referenceNo: finalRefNo });
-    if (existingRef) {
-      finalRefNo = generateReferenceNo();
-    }
-
-    const newClient = new clientModel({
+    const tempClientData = {
       referenceNo: finalRefNo,
       Category: appCategory,
       FullName: name,
@@ -95,23 +89,41 @@ exports.createClient = async (req, res) => {
       PassportNumber: passport,
       Status: appStatus,
       Paragraph: appRemarks
-    });
+    };
 
+    // 1. Send email FIRST before finalizing database registration
+    const emailResult = await sendRegistrationEmail(tempClientData);
+
+    if (!emailResult || !emailResult.success) {
+      console.warn(`[Registration Aborted] Email delivery to ${clientEmail} failed (${emailResult?.error || 'Unknown error'}). Record NOT saved in DB.`);
+      return res.status(400).json({
+        success: false,
+        message: `Registration failed: Confirmation email could not be delivered to ${clientEmail} (${emailResult?.error || "Connection timeout"}). Application was NOT registered in database.`,
+        emailSent: false,
+        emailDetails: emailResult
+      });
+    }
+
+    // 2. ONLY Save to Database AFTER confirmation email delivery succeeds!
+    const existingRef = await clientModel.findOne({ referenceNo: finalRefNo });
+    if (existingRef) {
+      finalRefNo = generateReferenceNo();
+      tempClientData.referenceNo = finalRefNo;
+    }
+
+    const newClient = new clientModel(tempClientData);
     await newClient.save();
-
-    // Trigger email notification to user
-    const emailResult = await sendRegistrationEmail(newClient);
 
     return res.status(201).json({
       success: true,
-      message: `Client application created successfully with Reference No: ${finalRefNo}`,
+      message: `Client application created and confirmation email sent successfully with Reference No: ${finalRefNo}`,
       client: newClient,
-      emailSent: emailResult.success,
+      emailSent: true,
       emailDetails: emailResult
     });
   } catch (error) {
     console.error("Error creating client:", error);
-    return res.status(400).json({ message: error.message });
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 

@@ -8,12 +8,98 @@ const nodemailer = require('nodemailer');
  * @param {Object} client - The created client application object
  * @returns {Promise<Object>} Status of email sending operation
  */
-async function sendRegistrationEmail(client) {
+/**
+ * Helper to attempt sending an email via configured primary SMTP or fallbacks
+ */
+async function sendMailWithFallback(mailOptions) {
   const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.EMAIL_PORT || '465', 10);
-  const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
+  const port = parseInt(process.env.EMAIL_PORT || '587', 10);
+  const secure = process.env.EMAIL_SECURE === 'true';
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
+
+  // 1. Try Configured Primary SMTP with TLS (port 587 or custom port)
+  if (user && pass && pass !== 'your_app_password_here') {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: host,
+        port: port,
+        secure: secure,
+        auth: { user, pass },
+        tls: {
+          rejectUnauthorized: false
+        },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
+      });
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Email Service Success] Email sent via SMTP (${host}:${port}) to ${mailOptions.to}. MessageId: ${info.messageId}`);
+      return { success: true, messageId: info.messageId, mode: 'SMTP' };
+    } catch (primaryError) {
+      console.warn(`[Email Service Notice] Primary SMTP (${host}:${port}) failed (${primaryError.message}). Attempting Gmail Service fallback...`);
+    }
+
+    // 2. Try Gmail Service fallback if primary host failed
+    try {
+      const gmailTransporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass },
+        tls: {
+          rejectUnauthorized: false
+        },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
+      });
+
+      const info = await gmailTransporter.sendMail(mailOptions);
+      console.log(`[Email Service Success] Email sent via Gmail Service to ${mailOptions.to}. MessageId: ${info.messageId}`);
+      return { success: true, messageId: info.messageId, mode: 'GmailService' };
+    } catch (gmailError) {
+      console.warn(`[Email Service Notice] Gmail Service fallback failed (${gmailError.message}). Attempting Ethereal test account...`);
+    }
+  }
+
+  // 3. Fallback to Ethereal Test Account
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const testTransporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    });
+
+    const info = await testTransporter.sendMail({
+      ...mailOptions,
+      from: `"Macao PSP Services" <${testAccount.user}>`
+    });
+
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log(`[Email Service Success] Email sent via Ethereal to ${mailOptions.to}. Preview URL: ${previewUrl}`);
+    return { success: true, messageId: info.messageId, previewUrl, mode: 'Ethereal' };
+  } catch (testError) {
+    console.error(`[Email Service Error] All email delivery transports failed:`, testError.message);
+    return { success: false, error: testError.message || 'SMTP Connection timeout' };
+  }
+}
+
+/**
+ * Sends a confirmation email to the applicant upon new application creation.
+ * 
+ * @param {Object} client - The client application object
+ * @returns {Promise<Object>} Status of email sending operation
+ */
+async function sendRegistrationEmail(client) {
+  const user = process.env.EMAIL_USER;
   const from = process.env.EMAIL_FROM || `"Macao PSP Services" <${user || 'noreply.macau@gmail.com'}>`;
 
   const htmlContent = `
@@ -73,64 +159,7 @@ async function sendRegistrationEmail(client) {
     html: htmlContent
   };
 
-  // 1. Try Configured SMTP if user and pass exist
-  if (user && pass && pass !== 'your_app_password_here') {
-    try {
-      const transporter = host.includes('gmail')
-        ? nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user, pass },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000
-          })
-        : nodemailer.createTransport({
-            host,
-            port,
-            secure,
-            auth: { user, pass },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000
-          });
-
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`[Email Service Success] Email sent via SMTP to ${client.Email}. MessageId: ${info.messageId}`);
-      return { success: true, messageId: info.messageId, mode: 'SMTP' };
-    } catch (error) {
-      console.warn(`[Email Service SMTP Notice] Primary SMTP transport failed (${error.message}). Attempting Ethereal test account...`);
-    }
-  }
-
-  // 2. Fallback to Ethereal Test Account so email generation and preview link always work
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    const testTransporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    });
-
-    const info = await testTransporter.sendMail({
-      ...mailOptions,
-      from: `"Macao PSP Services" <${testAccount.user}>`
-    });
-
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`[Email Service Success] Email sent via Ethereal to ${client.Email}. MessageId: ${info.messageId}`);
-    console.log(`[Email Service Preview URL]: ${previewUrl}`);
-    return { success: true, messageId: info.messageId, previewUrl, mode: 'Ethereal' };
-  } catch (testError) {
-    console.error(`[Email Service Error] Failed to send email:`, testError.message);
-    return { success: false, error: testError.message };
-  }
+  return await sendMailWithFallback(mailOptions);
 }
 
 /**
@@ -200,56 +229,7 @@ async function sendStatusUpdateEmail(client) {
     html: htmlContent
   };
 
-  if (user && pass && pass !== 'your_app_password_here') {
-    try {
-      const transporter = host.includes('gmail')
-        ? nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user, pass },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000
-          })
-        : nodemailer.createTransport({
-            host,
-            port,
-            secure,
-            auth: { user, pass },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000
-          });
-
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`[Email Service Update Success] Email sent to ${client.Email}. MessageId: ${info.messageId}`);
-      return { success: true, messageId: info.messageId, mode: 'SMTP' };
-    } catch (error) {
-      console.warn(`[Email Service Update SMTP Notice] Failed: ${error.message}`);
-    }
-  }
-
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    const testTransporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: { user: testAccount.user, pass: testAccount.pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    });
-
-    const info = await testTransporter.sendMail({
-      ...mailOptions,
-      from: `"Macao PSP Services" <${testAccount.user}>`
-    });
-
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    return { success: true, messageId: info.messageId, previewUrl, mode: 'Ethereal' };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
+  return await sendMailWithFallback(mailOptions);
 }
 
 module.exports = {

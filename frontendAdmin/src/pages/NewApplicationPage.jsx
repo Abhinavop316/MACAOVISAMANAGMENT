@@ -62,11 +62,9 @@ export default function NewApplicationPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     try {
-      // 1. Local Store Backup
-      const localCreated = addApplication(formData);
-      setCreatedApp(localCreated);
+      const targetEmail = formData.email;
 
-      // 2. Persist to Backend MongoDB + Trigger Nodemailer Email
+      // 1. Persist to Backend MongoDB + Trigger Nodemailer Email
       const response = await API.post("/clients", {
         referenceNo: formData.referenceNo,
         Category: formData.category,
@@ -83,89 +81,67 @@ export default function NewApplicationPage() {
 
       const data = response.data;
 
-      const targetEmail = formData.email;
+      if (data && data.success && data.client) {
+        const finalRef = data.client?.referenceNo || formData.referenceNo;
 
-      if (data && data.client) {
-        const finalRef = data.client?.referenceNo || localCreated.referenceNo;
-        setCreatedApp({ ...localCreated, referenceNo: finalRef });
+        // Save to local store ONLY AFTER backend registration & email confirmation succeed
+        const localCreated = addApplication({ ...formData, referenceNo: finalRef });
+        setCreatedApp(localCreated);
+
         setSuccessMsg(
           `Application ${finalRef} successfully registered in database!`,
         );
 
-        if (data.emailSent) {
-          if (data.emailDetails?.previewUrl) {
-            setEmailNotice(
-              <span>
-                📧 Confirmation email sent!{" "}
-                <a
-                  href={data.emailDetails.previewUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    textDecoration: "underline",
-                    color: "#0284c7",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Click to View Email Preview ↗
-                </a>
-              </span>,
-            );
-          } else {
-            setEmailNotice(
-              `📧 Confirmation email with Reference No (${finalRef}) sent to ${targetEmail}.`,
-            );
-          }
+        if (data.emailDetails?.previewUrl) {
+          setEmailNotice(
+            <span>
+              📧 Confirmation email sent!{" "}
+              <a
+                href={data.emailDetails.previewUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  textDecoration: "underline",
+                  color: "#0284c7",
+                  fontWeight: "bold",
+                }}
+              >
+                Click to View Email Preview ↗
+              </a>
+            </span>,
+          );
         } else {
           setEmailNotice(
-            `📧 Application saved in DB. (Email status: ${data.emailDetails?.error || "Pending"}).`,
+            `📧 Confirmation email with Reference No (${finalRef}) successfully delivered to ${targetEmail}.`,
           );
         }
+
+        // Reset form fields & generate fresh reference number
+        setFormData({
+          referenceNo: generateRefNumber(),
+          idType: "passport",
+          idNumber: "",
+          surname: "",
+          givenName: "",
+          email: "",
+          dob: "",
+          placeOfBirth: "",
+          category: "Student Visa",
+          status: "Under Review",
+          remarks: "",
+        });
       } else {
-        setSuccessMsg(
-          `Application ${localCreated.referenceNo} registered in local store.`,
-        );
-        setEmailNotice(
-          `Backend notice: ${data.message || "Could not connect to backend"}`,
+        setErrorMsg(
+          `Registration Failed: ${data.message || "Confirmation email could not be delivered. Application was NOT registered."}`
         );
       }
-
-      // Reset all form input fields & auto-generate a fresh new Reference Number
-      setFormData({
-        referenceNo: generateRefNumber(),
-        idType: "passport",
-        idNumber: "",
-        surname: "",
-        givenName: "",
-        email: "",
-        dob: "",
-        placeOfBirth: "",
-        category: "Student Visa",
-        status: "Under Review",
-        remarks: "",
-      });
     } catch (err) {
-      console.warn("Backend API connection warning:", err.message);
-      setSuccessMsg(
-        `Application ${formData.referenceNo} registered successfully in store.`,
-      );
-      setEmailNotice(
-        `Note: Saved in local store. Backend server connection error.`,
-      );
-      // Reset inputs & generate new ref-no even on offline fallback
-      setFormData({
-        referenceNo: generateRefNumber(),
-        idType: "passport",
-        idNumber: "",
-        surname: "",
-        givenName: "",
-        email: "",
-        dob: "",
-        placeOfBirth: "",
-        category: "Student Visa",
-        status: "Under Review",
-        remarks: "",
-      });
+      console.error("Backend registration error:", err);
+      const apiError =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to deliver confirmation email. Registration cancelled.";
+      setErrorMsg(`❌ Registration Aborted: ${apiError}`);
     } finally {
       setIsSubmitting(false);
     }
